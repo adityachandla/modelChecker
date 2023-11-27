@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import TypeAlias, Union
 from dataclasses import dataclass
 
@@ -46,7 +47,7 @@ def parse_query(filepath: str) -> Formula:
     with open(filepath, 'r') as formula_file:
         formula_string = formula_file.read().strip()
     parser = Parser(formula_string)
-    return parser.parse(formula_string)
+    return parser.parse()
 
 class Parser:
     def __init__(self, formula_str: str):
@@ -56,10 +57,12 @@ class Parser:
     def get_char(self) -> str:
         return self.formula_str[self.index]
     
-    def expect(s: str):
+    def expect(self, s: str):
         self.index += len(s)
 
     def skip_whitespace(self):
+        if self.index == len(self.formula_str):
+            return
         while self.get_char() == ' ':
             self.index += 1
 
@@ -92,7 +95,7 @@ class Parser:
         return FalseLiteral()
 
     def parse_recursion_variable(self) -> RecursionVariable:
-        name = get_char()
+        name = self.get_char()
         self.expect(name)
         var = RecursionVariable(name)
         self.skip_whitespace()
@@ -101,13 +104,17 @@ class Parser:
     def parse_logic_formula(self) -> LogicFormula:
         """
         This method deviates from the provided algorithm.
+        Here we just do all the work in a single function.
+        If something breaks, it is more likely to be because of this function.
         """
         self.expect("(")
         self.skip_whitespace()
         first = self.parse()
         self.skip_whitespace()
         andOperator = self.get_char() == '&'
-        self.expect("&&") # Or ||
+        # Expect does not really check anything, it just advances the pointer
+        # therefore, this should also take care of || case.
+        self.expect("&&")
         self.skip_whitespace()
         second = self.parse()
         self.skip_whitespace()
@@ -115,16 +122,37 @@ class Parser:
         self.skip_whitespace()
         return LogicFormula(first, second, andOperator)
 
-    ## TODO
     def parse_mu_formula(self) -> MuFormula:
-        pass
+        self.expect("mu")
+        self.skip_whitespace()
+        rec_var = self.parse_recursion_variable()
+        self.expect(".")
+        self.skip_whitespace()
+        remaining = self.parse()
+        return MuFormula(rec_var, remaining)
 
-    def parse_nu_formula(self) -> MuFormula:
-        pass
+    def parse_nu_formula(self) -> NuFormula:
+        self.expect("nu")
+        self.skip_whitespace()
+        rec_var = self.parse_recursion_variable()
+        self.expect(".")
+        self.skip_whitespace()
+        remaining = self.parse()
+        return NuFormula(rec_var, remaining)
 
-    def parse_box_formula(self) -> MuFormula:
-        pass
+    def parse_box_formula(self) -> BoxFormula:
+        self.expect("[")
+        label = self.get_char()
+        self.expect("]")
+        self.skip_whitespace()
+        remaining = self.parse()
+        return BoxFormula(label, remaining)
 
-    def parse_diamond_formula(self) -> MuFormula:
-        pass
+    def parse_diamond_formula(self) -> DiamondFormula:
+        self.expect("[")
+        label = self.get_char()
+        self.expect("]")
+        self.skip_whitespace()
+        remaining = self.parse()
+        return DiamondFormula(label, remaining)
 

@@ -28,8 +28,8 @@ def main():
     graph = Graph.from_file(args.dirpath+graph_file)
     queries = []
     for query_file in query_files:
-        query.parse_query(dirpath+query_file)
-    print(graph)
+        queries.append(query.parse_query(args.dirpath+query_file))
+    print("Parsed queries and graph")
 
 if __name__ == "__main__":
     main()
