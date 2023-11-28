@@ -90,7 +90,7 @@ class Parser:
         return TrueLiteral()
 
     def parse_false_literal(self) -> TrueLiteral:
-        self.expect("true")
+        self.expect("false")
         self.skip_whitespace()
         return FalseLiteral()
 
