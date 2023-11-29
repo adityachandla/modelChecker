@@ -43,15 +43,18 @@ Formula: TypeAlias = Union[TrueLiteral, FalseLiteral, RecursionVariable,
                            LogicFormula, NuFormula, MuFormula,
                            DiamondFormula, BoxFormula]
 
-def parse_query(filepath: str) -> Formula:
+def parse_query(filepath: str) -> (Formula, set[str], str):
     with open(filepath, 'r') as formula_file:
         formula_string = formula_file.read().strip()
     parser = Parser(formula_string)
-    return parser.parse()
+    formula = parser.parse()
+    variables = parser.get_variables()
+    return (formula, variables, formula_string)
 
 class Parser:
     def __init__(self, formula_str: str):
         self.formula_str = formula_str
+        self.variables = set()
         self.index = 0
 
     def get_char(self) -> str:
@@ -59,6 +62,9 @@ class Parser:
     
     def expect(self, s: str):
         self.index += len(s)
+
+    def get_variables(self):
+        return self.variables
 
     def skip_whitespace(self):
         if self.index == len(self.formula_str):
@@ -96,6 +102,8 @@ class Parser:
 
     def parse_recursion_variable(self) -> RecursionVariable:
         name = self.get_char()
+        # We assume no free variables
+        self.variables.add(name)
         self.expect(name)
         var = RecursionVariable(name)
         self.skip_whitespace()
@@ -142,17 +150,23 @@ class Parser:
 
     def parse_box_formula(self) -> BoxFormula:
         self.expect("[")
-        label = self.get_char()
+        l = ""
+        while self.get_char() != ']':
+            l += self.get_char()
+            self.index += 1
         self.expect("]")
         self.skip_whitespace()
         remaining = self.parse()
-        return BoxFormula(label, remaining)
+        return BoxFormula(l, remaining)
 
     def parse_diamond_formula(self) -> DiamondFormula:
-        self.expect("[")
-        label = self.get_char()
-        self.expect("]")
+        self.expect("<")
+        l = ""
+        while self.get_char() != '>':
+            l += self.get_char()
+            self.index += 1
+        self.expect(">")
         self.skip_whitespace()
         remaining = self.parse()
-        return DiamondFormula(label, remaining)
+        return DiamondFormula(l, remaining)
 

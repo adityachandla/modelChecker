@@ -4,6 +4,7 @@ import argparse
 import query
 
 from graph import Graph
+from naive import NaiveChecker
 
 def get_files(path: str) -> (list[str],str):
     files = os.listdir(path)
@@ -29,7 +30,13 @@ def main():
     queries = []
     for query_file in query_files:
         queries.append(query.parse_query(args.dirpath+query_file))
-    print("Parsed queries and graph")
+    naiveChecker = NaiveChecker(graph)
+    for i in range(len(queries)):
+        formula, variables, formula_string = queries[i]
+        print(formula_string)
+        res = naiveChecker.solve_formula(variables, formula)
+        print(res)
+        print()
 
 if __name__ == "__main__":
     main()
