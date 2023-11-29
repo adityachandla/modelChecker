@@ -48,6 +48,8 @@ def parse_query(filepath: str) -> (Formula, set[str], str):
         formula_string = formula_file.read().strip()
     parser = Parser(formula_string)
     formula = parser.parse()
+    # TODO get the variables in the order they are defined and also get whether their
+    # binder is nu or mu.
     variables = parser.get_variables()
     return (formula, variables, formula_string)
 
