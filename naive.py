@@ -1,32 +1,34 @@
 from graph import Graph
-from query import *
+import query
+
 
 class NaiveChecker:
     def __init__(self, graph: Graph):
         self.graph = graph
 
-    def solve_formula(self, variables: set[str], formula: Formula) -> set[int]:
+    def solve_formula(self, variables: set[str],
+                      formula: query.Formula) -> set[int]:
         self.varState = dict()
         for v in variables:
             self.varState[v] = {}
         return self.solve(formula)
 
-    def solve(self, formula: Formula) -> set[int]:
+    def solve(self, formula: query.Formula) -> set[int]:
         match formula:
-            case RecursionVariable(name):
+            case query.RecursionVariable(name):
                 return self.varState[name]
-            case TrueLiteral():
+            case query.TrueLiteral():
                 return set(range(0, self.graph.num_nodes))
-            case FalseLiteral():
+            case query.FalseLiteral():
                 return set()
-            case LogicFormula(left, right, is_and):
-                l = self.solve(left)
-                r = self.solve(right)
+            case query.LogicFormula(left, right, is_and):
+                left_solution = self.solve(left)
+                right_solution = self.solve(right)
                 if is_and:
-                    return l.intersection(r)
+                    return left_solution.intersection(right_solution)
                 else:
-                    return l.union(r)
-            case BoxFormula(l, f):
+                    return left_solution.union(right_solution)
+            case query.BoxFormula(l, f):
                 result = self.solve(f)
                 box_result = set()
                 for i in range(self.graph.num_nodes):
@@ -39,7 +41,7 @@ class NaiveChecker:
                     if all_in:
                         box_result.add(i)
                 return box_result
-            case DiamondFormula(l, f):
+            case query.DiamondFormula(l, f):
                 result = self.solve(f)
                 diamond_result = set()
                 for i in range(self.graph.num_nodes):
@@ -49,7 +51,7 @@ class NaiveChecker:
                             diamond_result.add(i)
                             break
                 return diamond_result
-            case NuFormula(var, f):
+            case query.NuFormula(var, f):
                 self.varState[var.name] = set(range(0, self.graph.num_nodes))
                 while True:
                     updatedState = {i for i in self.varState[var.name]}
@@ -57,7 +59,7 @@ class NaiveChecker:
                     if self.varState[var.name] == updatedState:
                         break
                 return self.varState[var.name]
-            case MuFormula(var, f):
+            case query.MuFormula(var, f):
                 self.varState[var.name] = set()
                 while True:
                     updatedState = {i for i in self.varState[var.name]}

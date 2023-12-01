@@ -2,15 +2,19 @@ from __future__ import annotations
 from typing import TypeAlias, Union
 from dataclasses import dataclass
 
+
 class TrueLiteral:
     pass
+
 
 class FalseLiteral:
     pass
 
+
 @dataclass
 class RecursionVariable:
     name: str
+
 
 @dataclass
 class LogicFormula:
@@ -19,39 +23,46 @@ class LogicFormula:
     right: Formula
     is_and: bool
 
+
 @dataclass
 class NuFormula:
     variable: RecursionVariable
     formula: Formula
+
 
 @dataclass
 class MuFormula:
     variable: RecursionVariable
     formula: Formula
 
+
 @dataclass
 class DiamondFormula:
     label: str
     formula: Formula
+
 
 @dataclass
 class BoxFormula:
     label: str
     formula: Formula
 
+
 Formula: TypeAlias = Union[TrueLiteral, FalseLiteral, RecursionVariable,
                            LogicFormula, NuFormula, MuFormula,
                            DiamondFormula, BoxFormula]
+
 
 def parse_query(filepath: str) -> (Formula, set[str], str):
     with open(filepath, 'r') as formula_file:
         formula_string = formula_file.read().strip()
     parser = Parser(formula_string)
     formula = parser.parse()
-    # TODO get the variables in the order they are defined and also get whether their
-    # binder is nu or mu.
+    # TODO get the variables in the order they are
+    # defined and also get whether their binder is nu or mu.
     variables = parser.get_variables()
     return (formula, variables, formula_string)
+
 
 class Parser:
     def __init__(self, formula_str: str):
@@ -61,7 +72,7 @@ class Parser:
 
     def get_char(self) -> str:
         return self.formula_str[self.index]
-    
+
     def expect(self, s: str):
         self.index += len(s)
 
@@ -152,23 +163,22 @@ class Parser:
 
     def parse_box_formula(self) -> BoxFormula:
         self.expect("[")
-        l = ""
+        label = ""
         while self.get_char() != ']':
-            l += self.get_char()
+            label += self.get_char()
             self.index += 1
         self.expect("]")
         self.skip_whitespace()
         remaining = self.parse()
-        return BoxFormula(l, remaining)
+        return BoxFormula(label, remaining)
 
     def parse_diamond_formula(self) -> DiamondFormula:
         self.expect("<")
-        l = ""
+        label = ""
         while self.get_char() != '>':
-            l += self.get_char()
+            label += self.get_char()
             self.index += 1
         self.expect(">")
         self.skip_whitespace()
         remaining = self.parse()
-        return DiamondFormula(l, remaining)
-
+        return DiamondFormula(label, remaining)
