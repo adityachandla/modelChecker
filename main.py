@@ -1,6 +1,7 @@
 import os
 import argparse
 import query
+import query_node
 
 from graph import Graph
 from naive import NaiveChecker
