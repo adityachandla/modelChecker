@@ -1,0 +1,3 @@
+% In every state, reachable by plato not eating, plato has the chance to starve
+
+nu X. (([i]X && [others]X ) && nu Y. (<i>Y || <others>Y) )

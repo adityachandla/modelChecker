@@ -1,0 +1,3 @@
+% Invariantly, plato can eat in some future.
+
+nu X. (([i]X && ([plato]X && [others]X )) && mu Y. ((<i>Y || <others>Y) || <plato>true ))

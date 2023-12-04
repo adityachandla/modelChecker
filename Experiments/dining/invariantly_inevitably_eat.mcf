@@ -1,0 +1,3 @@
+% In every reachable state, someone must start eating
+
+nu X. (([i]X && ([plato]X && [others]X )) && mu Y. ([i]Y && (<plato>true || <others>true)) )
