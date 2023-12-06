@@ -1,5 +1,6 @@
 from graph import Graph
 import query
+import checker_utils as cu
 
 
 class NaiveChecker:
@@ -7,11 +8,13 @@ class NaiveChecker:
         self.graph = graph
 
     def solve_formula(self, variables: set[str],
-                      formula: query.Formula) -> set[int]:
+                      formula: query.Formula) -> cu.CheckerOutput:
         self.varState = dict()
+        self.iter_count = dict()
         for v in variables:
             self.varState[v] = {}
-        return self.solve(formula)
+            self.iter_count[v] = 0
+        return cu.CheckerOutput(self.solve(formula), self.iter_count)
 
     def solve(self, formula: query.Formula) -> set[int]:
         match formula:
@@ -58,6 +61,7 @@ class NaiveChecker:
                     self.varState[var.name] = self.solve(f)
                     if self.varState[var.name] == updatedState:
                         break
+                    self.iter_count[var.name] += 1
                 return self.varState[var.name]
             case query.MuFormula(var, f):
                 self.varState[var.name] = set()
@@ -66,6 +70,7 @@ class NaiveChecker:
                     self.varState[var.name] = self.solve(f)
                     if self.varState[var.name] == updatedState:
                         break
+                    self.iter_count[var.name] += 1
                 return self.varState[var.name]
             case _:
                 raise AssertionError

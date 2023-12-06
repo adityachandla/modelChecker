@@ -52,14 +52,26 @@ Formula: TypeAlias = Union[TrueLiteral, FalseLiteral, RecursionVariable,
                            LogicFormula, NuFormula, MuFormula,
                            DiamondFormula, BoxFormula]
 
+## There are a lot of spaces in the files with new lines
+## This function removes as many as possible.
+def make_pretty(input_string: str) -> str:
+    c = []
+    i = 0
+    while i < len(input_string)-1:
+        if input_string[i] == ' ' and input_string[i+1] == ' ':
+            i += 1
+        else:
+            c.append(input_string[i])
+            i += 1
+    return ''.join(c)
 
 def parse_query(filepath: str) -> (Formula, set[str], str):
     with open(filepath, 'r') as formula_file:
-        formula_string = formula_file.read().strip()
+        formula_string = formula_file.read().replace("\n", " ")
+        formula_string = make_pretty(formula_string)
+        formula_string = formula_string.strip()
     parser = Parser(formula_string)
     formula = parser.parse()
-    # TODO get the variables in the order they are
-    # defined and also get whether their binder is nu or mu.
     variables = parser.get_variables()
     return (formula, variables, formula_string)
 

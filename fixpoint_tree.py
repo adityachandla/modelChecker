@@ -14,15 +14,16 @@ class Node:
 
 
 # Take in Formula
+# Output the variables that need to be reset for that variable
 # {"X" : ["Y", "Z"], "P": ["A","B"]}
 class ResetRelationCreator:
-    # This computation happens twice. Fix it and fix the testcases
-    def __init__(self, formula: Formula):
+    # TODO This computation happens twice for emerson lee. Fix it and fix the testcases
+    def __init__(self, formula: query.Formula):
         tree = create_tree(formula)
         self.parent_relation = create_parent_relation(tree)
         self.formula_types = create_fixpoint_to_type_relation(tree)
 
-    def find_relation(self, formula: Formula) -> dict[str, list[str]]:
+    def find_relation(self, formula: query.Formula) -> dict[str, list[str]]:
         match formula:
             case query.TrueLiteral() | query.FalseLiteral():
                 return {}
@@ -46,7 +47,7 @@ class ResetRelationCreator:
             case _:
                 raise AssertionError()
 
-    def check_subformulas(self, formula: Formula) -> list[str]:
+    def check_subformulas(self, formula: query.Formula) -> list[str]:
         match formula:
             case query.TrueLiteral() | query.FalseLiteral():
                 return []
@@ -69,7 +70,7 @@ class ResetRelationCreator:
             case _:
                 raise AssertionError()
 
-    def find_open_variables(self, formula: Formula, bound: set[str]) -> list[str]:
+    def find_open_variables(self, formula: query.Formula, bound: set[str]) -> list[str]:
         match formula:
             case query.TrueLiteral() | query.FalseLiteral():
                 return {}

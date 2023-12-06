@@ -2,6 +2,7 @@ from graph import Graph
 
 import query
 import fixpoint_tree as ft
+import checker_utils as cu
 
 
 class EmersonChecker:
@@ -9,19 +10,21 @@ class EmersonChecker:
         self.graph = graph
 
     def solve_formula(self, variables: set[str],
-                      formula: query.Formula) -> set[int]:
+                      formula: query.Formula) -> cu.CheckerOutput:
         tree = ft.create_tree(formula)
         self.type_relation = ft.create_fixpoint_to_type_relation(tree)
         rel_creator = ft.ResetRelationCreator(formula)
         self.reset_relation = rel_creator.find_relation(formula)
+        # Initialization step
         self.varState = {}
+        self.iter_count = {}
         for v in variables:
             if self.type_relation[v] == "max":
                 self.varState[v] = set(range(0, self.graph.num_nodes))
             else:
                 self.varState[v] = set()
-        print(self.reset_relation)
-        return self.solve(formula)
+            self.iter_count[v] = 0
+        return cu.CheckerOutput(self.solve(formula), self.iter_count)
 
     def solve(self, formula: query.Formula) -> set[int]:
         match formula:
@@ -67,6 +70,7 @@ class EmersonChecker:
                     self.varState[var.name] = self.solve(f)
                     if self.varState[var.name] == updatedState:
                         break
+                    self.iter_count[var.name] += 1
                 return self.varState[var.name]
             case query.MuFormula(var, f):
                 if var.name in self.reset_relation:
@@ -77,6 +81,7 @@ class EmersonChecker:
                     self.varState[var.name] = self.solve(f)
                     if self.varState[var.name] == updatedState:
                         break
+                    self.iter_count[var.name] += 1
                 return self.varState[var.name]
             case _:
                 raise AssertionError
