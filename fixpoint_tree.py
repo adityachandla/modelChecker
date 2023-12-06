@@ -12,6 +12,87 @@ class Node:
     children: list[Node]
     parent: Node
 
+
+# Take in Formula
+# {"X" : ["Y", "Z"], "P": ["A","B"]}
+class ResetRelationCreator:
+    # This computation happens twice. Fix it and fix the testcases
+    def __init__(self, formula: Formula):
+        tree = create_tree(formula)
+        self.parent_relation = create_parent_relation(tree)
+        self.formula_types = create_fixpoint_to_type_relation(tree)
+
+    def find_relation(self, formula: Formula) -> dict[str, list[str]]:
+        match formula:
+            case query.TrueLiteral() | query.FalseLiteral():
+                return {}
+            case query.LogicFormula(left, right, _):
+                left_dict = self.find_relation(left)
+                right_dict = self.find_relation(right)
+                return {**left_dict, **right_dict}
+            case query.DiamondFormula(l, f) | query.BoxFormula(l, f):
+                return self.find_relation(f)
+            case query.MuFormula(var, formula):
+                if var.name not in self.parent_relation:
+                    return {}
+                surrounding = self.parent_relation[var.name]
+                if surrounding is not None and self.formula_types[surrounding] == "max":
+                    return {var.name: self.check_subformulas(query.MuFormula(var, formula))}
+                return {}
+            case query.NuFormula(var, formula):
+                return self.find_relation(formula)
+            case query.RecursionVariable(name):
+                return {}
+            case _:
+                raise AssertionError()
+
+    def check_subformulas(self, formula: Formula) -> list[str]:
+        match formula:
+            case query.TrueLiteral() | query.FalseLiteral():
+                return []
+            case query.LogicFormula(left, right, _):
+                left_list = self.check_subformulas(left)
+                right_list = self.check_subformulas(right)
+                return [*left_list, *right_list]
+            case query.DiamondFormula(l, f) | query.BoxFormula(l, f):
+                return self.check_subformulas(f)
+            case query.MuFormula(var, formula):
+                open_variables = self.find_open_variables(formula, {var.name})
+                other_variables_to_reset = self.check_subformulas(formula)
+                if len(open_variables) > 0:
+                    return [var.name, *other_variables_to_reset]
+                return other_variables_to_reset
+            case query.NuFormula(var, formula):
+                return self.check_subformulas(formula)
+            case query.RecursionVariable(name):
+                return []
+            case _:
+                raise AssertionError()
+
+    def find_open_variables(self, formula: Formula, bound: set[str]) -> list[str]:
+        match formula:
+            case query.TrueLiteral() | query.FalseLiteral():
+                return {}
+            case query.LogicFormula(left, right, _):
+                left_list = self.find_open_variables(left, bound)
+                right_list = self.find_open_variables(right, bound)
+                return [*left_list, *right_list]
+            case query.DiamondFormula(l, f) | query.BoxFormula(l, f):
+                return self.find_open_variables(f, bound)
+            case query.MuFormula(var, formula) | query.NuFormula(var, formula):
+                bound.add(var.name)
+                open_variables = self.find_open_variables(formula, bound)
+                bound.remove(var.name)
+                return open_variables
+            case query.RecursionVariable(name):
+                if name in bound:
+                    return []
+                return [name]
+            case _:
+                raise AssertionError()
+
+
+
 ## This gives parent relation. Ex: {X: Y, Y: T} for 
 ## T
 ## |
@@ -28,6 +109,8 @@ class ParentRelationCreator:
         self.root = root
 
     def generate_relation(self) -> dict[str, str]:
+        if self.root is None:
+            return {}
         self.relation = dict()
         self._generate_relation(self.root)
         return self.relation
@@ -59,6 +142,8 @@ class TypeRelationCreator:
         self.root = root
 
     def generate_relation(self) -> dict[str, str]:
+        if self.root is None:
+            return {}
         self.relation = dict()
         self._generate_relation(self.root)
         return self.relation

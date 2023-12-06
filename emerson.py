@@ -11,10 +11,16 @@ class EmersonChecker:
     def solve_formula(self, variables: set[str],
                       formula: query.Formula) -> set[int]:
         tree = ft.create_tree(formula)
-        self.parent_relation = ft.create_parent_relation()
-        self.type_relation = ft.create_fixpoint_to_type_relation()
+        self.type_relation = ft.create_fixpoint_to_type_relation(tree)
+        rel_creator = ft.ResetRelationCreator(formula)
+        self.reset_relation = rel_creator.find_relation(formula)
+        self.varState = {}
         for v in variables:
-            self.varState[v] = {}
+            if self.type_relation[v] == "max":
+                self.varState[v] = set(range(0, self.graph.num_nodes))
+            else:
+                self.varState[v] = set()
+        print(self.reset_relation)
         return self.solve(formula)
 
     def solve(self, formula: query.Formula) -> set[int]:
@@ -56,7 +62,6 @@ class EmersonChecker:
                             break
                 return diamond_result
             case query.NuFormula(var, f):
-                self.varState[var.name] = set(range(0, self.graph.num_nodes))
                 while True:
                     updatedState = {i for i in self.varState[var.name]}
                     self.varState[var.name] = self.solve(f)
@@ -64,7 +69,9 @@ class EmersonChecker:
                         break
                 return self.varState[var.name]
             case query.MuFormula(var, f):
-                self.varState[var.name] = set()
+                if var.name in self.reset_relation:
+                    for var_to_reset in self.reset_relation[var.name]:
+                        self.varState[var_to_reset] = set()
                 while True:
                     updatedState = {i for i in self.varState[var.name]}
                     self.varState[var.name] = self.solve(f)

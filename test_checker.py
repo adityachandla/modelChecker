@@ -34,3 +34,32 @@ class SanityTest(unittest.TestCase):
         tr = ft.create_fixpoint_to_type_relation(tree)
         self.assertDictEqual(tr, {'X': 'max', 'Y': 'min', 'Z': 'min', 'Q':'max', 
                                   'V': 'min', 'T': 'min'})
+
+    def test_reset_relation(self):
+        formula = "nu X. nu Y. mu Z. mu A. (X || (Y || (mu B. B && true)))"
+        parser = query.Parser(formula)
+        res = parser.parse()
+        rc = ft.ResetRelationCreator(res)
+        self.assertDictEqual(rc.find_relation(res), {'Z': ['Z', 'A']})
+
+    def test_reset_relation_2(self):
+        formula = "nu X. nu Y. mu Z. mu A. (X || (Y || mu B. (B && X)))"
+        parser = query.Parser(formula)
+        res = parser.parse()
+        rc = ft.ResetRelationCreator(res)
+        self.assertDictEqual(rc.find_relation(res), {'Z': ['Z', 'A', 'B']})
+
+    def test_reset_relation_3(self):
+        formula = "nu X. nu Y. mu Z. mu A. (A || (Z || mu B. (B && true)))"
+        parser = query.Parser(formula)
+        res = parser.parse()
+        rc = ft.ResetRelationCreator(res)
+        self.assertDictEqual(rc.find_relation(res), {'Z': ['A']})
+
+    def test_reset_relation_4(self):
+        formula = "nu X. (mu Y. X && mu Z. X)"
+        parser = query.Parser(formula)
+        res = parser.parse()
+        rc = ft.ResetRelationCreator(res)
+        self.assertDictEqual(rc.find_relation(res), {'Z': ['Z'], 'Y': ['Y']})
+

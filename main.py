@@ -1,10 +1,10 @@
 import os
 import argparse
 import query
-import query_node
 
 from graph import Graph
 from naive import NaiveChecker
+from emerson import EmersonChecker
 
 
 def get_files(path: str) -> (list[str], str):
@@ -23,6 +23,7 @@ def get_files(path: str) -> (list[str], str):
 def main():
     parser = argparse.ArgumentParser(prog="Model checker")
     parser.add_argument('dirpath', help='Path to directory')
+    parser.add_argument('-e', '--emerson', action="store_true")
     args = parser.parse_args()
 
     query_files, graph_file = get_files(args.dirpath)
@@ -32,13 +33,24 @@ def main():
     queries = []
     for query_file in query_files:
         queries.append(query.parse_query(args.dirpath+query_file))
-    naiveChecker = NaiveChecker(graph)
-    for i in range(len(queries)):
-        formula, variables, formula_string = queries[i]
-        print(formula_string)
-        res = naiveChecker.solve_formula(variables, formula)
-        print(res)
-        print()
+    if not args.emerson:
+        print("Using Naive")
+        naiveChecker = NaiveChecker(graph)
+        for i in range(len(queries)):
+            formula, variables, formula_string = queries[i]
+            print(formula_string)
+            res = naiveChecker.solve_formula(variables, formula)
+            print(res)
+            print()
+    else:
+        print("Using Emerson")
+        emerson = EmersonChecker(graph)
+        for i in range(len(queries)):
+            formula, variables, formula_string = queries[i]
+            print(formula_string)
+            res = emerson.solve_formula(variables, formula)
+            print(res)
+            print()
 
 
 if __name__ == "__main__":
