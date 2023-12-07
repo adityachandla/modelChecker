@@ -63,11 +63,16 @@ def make_pretty(input_string: str) -> str:
         else:
             c.append(input_string[i])
             i += 1
+    if input_string[-1] != ' ':
+        c.append(input_string[-1])
     return ''.join(c)
 
 def parse_query(filepath: str) -> (Formula, set[str], str):
     with open(filepath, 'r') as formula_file:
-        formula_string = formula_file.read().replace("\n", " ")
+        formula_lines = formula_file.read().split("\n")
+        valid_line = lambda line: len(line) > 0 and not line.startswith("%")
+        formula_lines = [l for l in formula_lines if valid_line(l)]
+        formula_string = " ".join(formula_lines)
         formula_string = make_pretty(formula_string)
         formula_string = formula_string.strip()
     parser = Parser(formula_string)
