@@ -24,7 +24,10 @@ class EmersonChecker:
             else:
                 self.varState[v] = set()
             self.iter_count[v] = 0
-        return cu.CheckerOutput(self.solve(formula), self.iter_count)
+        start = cu.get_time()
+        res = self.solve(formula)
+        duration = cu.get_time()-start
+        return cu.CheckerOutput(res, self.iter_count, duration)
 
     def solve(self, formula: query.Formula) -> set[int]:
         match formula:

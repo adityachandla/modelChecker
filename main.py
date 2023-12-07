@@ -52,6 +52,7 @@ def main():
         res = checker.solve_formula(variables, formula)
         for variable in res.num_iter:
             print(f"Variable={variable} Num Iterations={res.num_iter[variable]}")
+        print(f"Duration={res.running_time_millis}ms")
         print(f"Satisfying States={len(res.satisfied_states)}")
         print("---------------------------------------")
         print()
