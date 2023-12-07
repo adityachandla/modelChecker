@@ -1,6 +1,8 @@
 import unittest
+import copy
 import query
 import fixpoint_tree as ft
+from fast_set import FastSet
 
 from graph import Graph
 from naive import NaiveChecker
@@ -62,4 +64,56 @@ class SanityTest(unittest.TestCase):
         res = parser.parse()
         rc = ft.ResetRelationCreator(res)
         self.assertDictEqual(rc.find_relation(res), {'Z': ['Z'], 'Y': ['Y']})
+
+
+class FastSetTests(unittest.TestCase):
+    def test_all_set(self):
+        one = FastSet(66, True)
+        self.assertEqual(len(one.get_as_list()), 66)
+
+    def test_empty(self):
+        one = FastSet(66, False)
+        self.assertEqual(len(one.get_as_list()), 0)
+
+    def test_addition(self):
+        one = FastSet(66, False)
+        one.add(33)
+        self.assertListEqual(one.get_as_list(), [33])
+        one.add(65)
+        self.assertListEqual(one.get_as_list(), [33, 65])
+
+    def test_any_satisfying(self):
+        one = FastSet(66, False)
+        self.assertFalse(one.any_satisfying())
+        one.add(65)
+        self.assertTrue(one.any_satisfying())
+
+    def test_union(self):
+        one = FastSet(66, False)
+        one.add(33)
+        two = FastSet(66, False)
+        two.add(44)
+        one.union(two)
+        self.assertListEqual(one.get_as_list(), [33,44])
+
+    def test_intersection(self):
+        one = FastSet(66, False)
+        one.add(33)
+        one.add(8)
+        two = FastSet(66, False)
+        two.add(44)
+        two.add(8)
+        one.intersection(two)
+        self.assertListEqual(one.get_as_list(), [8])
+
+    def test_copy(self):
+        one = FastSet(66, False)
+        two = copy.deepcopy(one)
+        two.add(33)
+        self.assertListEqual(one.get_as_list(), [])
+
+    def test_equality(self):
+        one = FastSet(66, False)
+        two = FastSet(66, False)
+        self.assertEqual(one, two)
 
