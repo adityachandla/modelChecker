@@ -13,7 +13,7 @@ class EmersonChecker:
                       formula: query.Formula) -> cu.CheckerOutput:
         tree = ft.create_tree(formula)
         self.type_relation = ft.create_fixpoint_to_type_relation(tree)
-        rel_creator = ft.ResetRelationCreator(formula)
+        rel_creator = ft.ResetRelationCreator(tree, self.type_relation)
         self.reset_relation = rel_creator.find_relation(formula)
         # Initialization step
         self.varState = {}

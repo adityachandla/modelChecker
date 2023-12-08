@@ -17,11 +17,9 @@ class Node:
 # Output the variables that need to be reset for that variable
 # {"X" : ["Y", "Z"], "P": ["A","B"]}
 class ResetRelationCreator:
-    # TODO This computation happens twice for emerson lee. Fix it and fix the testcases
-    def __init__(self, formula: query.Formula):
-        tree = create_tree(formula)
+    def __init__(self, tree: Node, type_relation: dict[str,str]):
         self.parent_relation = create_parent_relation(tree)
-        self.formula_types = create_fixpoint_to_type_relation(tree)
+        self.formula_types = type_relation
 
     def find_relation(self, formula: query.Formula) -> dict[str, list[str]]:
         match formula:
