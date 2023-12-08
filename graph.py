@@ -1,26 +1,17 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from collections import defaultdict
 
 import parse
 
 
 @dataclass
-class Edge:
-    destination: int
-    label: str
-
-
-@dataclass
 class Graph:
-    adjacency: list[list[Edge]]
+    adjacency_dict: dict[tuple[int, str],list[int]]
     num_nodes: int
 
-    def get_outgoing(self, src: int, label: str) -> list[int]:
-        destination_nodes = []
-        for edge in self.adjacency[src]:
-            if edge.label == label:
-                destination_nodes.append(edge.destination)
-        return destination_nodes
+    def get_outgoing(self, src: int, label: str) -> tuple[int]:
+        return self.adjacency_dict[(src, label)]
 
     @staticmethod
     def from_file(filename: str) -> Graph:
@@ -28,9 +19,10 @@ class Graph:
             lines = graph_file.read().strip().split('\n')
         header_format_str = "des ({start:d},{edges:d},{nodes:d})"
         header = parse.parse(header_format_str, lines[0].strip())
-        g = Graph([[] for i in range(header['nodes'])], header['nodes'])
+        g = Graph(defaultdict(list), header['nodes'])
         edge_format = parse.compile("({src:d},\"{label}\",{dest:d})")
         for i in range(1, len(lines)):
             res = edge_format.parse(lines[i].strip())
-            g.adjacency[res['src']].append(Edge(res['dest'], res['label']))
+            key = (res['src'], res['label'])
+            g.adjacency_dict[key].append(res['dest'])
         return g

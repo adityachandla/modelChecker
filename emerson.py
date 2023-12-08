@@ -69,7 +69,7 @@ class EmersonChecker:
                 return diamond_result
             case query.NuFormula(var, f):
                 while True:
-                    updatedState = {i for i in self.varState[var.name]}
+                    updatedState = self.varState[var.name].copy()
                     self.varState[var.name] = self.solve(f)
                     if self.varState[var.name] == updatedState:
                         break
@@ -80,7 +80,7 @@ class EmersonChecker:
                     for var_to_reset in self.reset_relation[var.name]:
                         self.varState[var_to_reset] = set()
                 while True:
-                    updatedState = {i for i in self.varState[var.name]}
+                    updatedState = self.varState[var.name].copy()
                     self.varState[var.name] = self.solve(f)
                     if self.varState[var.name] == updatedState:
                         break
