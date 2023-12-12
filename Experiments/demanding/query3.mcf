@@ -1,0 +1,4 @@
+% There is a course of events in which child is playing infinitely often
+
+nu X. mu Y.  
+(<playing>X || (<i>Y || (<wisdom>Y || <ask>Y))) 
