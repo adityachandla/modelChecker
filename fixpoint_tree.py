@@ -32,12 +32,14 @@ class ResetRelationCreator:
             case query.DiamondFormula(l, f) | query.BoxFormula(l, f):
                 return self.find_relation(f)
             case query.MuFormula(var, formula):
+                recursion_result = self.find_relation(formula)
                 if var.name not in self.parent_relation:
-                    return self.find_relation(formula)
+                    return recursion_result
                 surrounding = self.parent_relation[var.name]
                 if surrounding is not None and self.formula_types[surrounding] == "max":
-                    return {var.name: self.check_subformulas(query.MuFormula(var, formula))}
-                return self.find_relation(formula)
+                    recursion_result[var.name] = \
+                            self.check_subformulas(query.MuFormula(var, formula))
+                return recursion_result
             case query.NuFormula(var, formula):
                 return self.find_relation(formula)
             case query.RecursionVariable(name):
