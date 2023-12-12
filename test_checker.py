@@ -80,3 +80,12 @@ class SanityTest(unittest.TestCase):
         rc = ft.ResetRelationCreator(tree, type_relation)
         self.assertDictEqual(rc.find_relation(res), {'Z': ['Z'], 'Y': ['Y']})
 
+    def test_reset_relation_6(self):
+        formula = "nu X. mu Y. (Y && nu Z. mu T. mu R. Z)"
+        parser = query.Parser(formula)
+        res = parser.parse()
+        tree = ft.create_tree(res)
+        type_relation = ft.create_fixpoint_to_type_relation(tree)
+        rc = ft.ResetRelationCreator(tree, type_relation)
+        print(rc.find_relation(res))
+
