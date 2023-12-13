@@ -141,3 +141,13 @@ res = parser.parse()
 print("Nested: ", nested(res))
 print("Alternation: ", alternation_depth(res))
 print("Dependent: ", dependent_alternation_depth(res))
+
+print()
+
+# Denise's testcase
+formula = "nu X. mu Y. nu T. nu Z. mu Q. ((Y && Z) && Q)"
+parser = query.Parser(formula)
+res = parser.parse()
+print("Nested: ", nested(res))
+print("Alternation: ", alternation_depth(res))
+print("Dependent: ", dependent_alternation_depth(res))
