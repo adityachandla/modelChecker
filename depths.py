@@ -1,147 +1,138 @@
 from fixpoint_tree import *
 import query
 
-class ComputeDepths:
-    def __init__(self, formula, tree):
-        self.formula = formula
-        self.tree = tree
-        
-    def make_parent_to_child(self, child_to_parent):
-        "Creates a reverse dictionary where we map a parent to its children"
-        parent_to_child = {}
-        for child, parent in child_to_parent.items():
-            if parent not in parent_to_child:
-                parent_to_child[parent] = []
-            parent_to_child[parent].append(child)
-        return parent_to_child
+def nested(formula: query.Formula) -> int:
+    "computes the nested depth"
+    match formula:
+        case query.TrueLiteral() | query.FalseLiteral():
+            return 0
+        case query.LogicFormula(left, right, _):
+            l_depth = nested(left)
+            r_depth = nested(right)
+            return max(l_depth, r_depth)
+        case query.DiamondFormula(l, f) | query.BoxFormula(l, f):
+            return nested(f)
+        case query.MuFormula(var, f) | query.NuFormula(var, f):
+            return 1 + nested(f)
+        case query.RecursionVariable(name):
+            return 0
 
-    def nested(self):
-        "computes the nested depth"
-        child_to_parent = create_parent_relation(self.tree) 
-        parent_to_child = self.make_parent_to_child(child_to_parent)    
-        
-        max_depth = 0
+def alternation_depth(formula: query.Formula) -> int:
+    match formula:
+        case query.TrueLiteral() | query.FalseLiteral():
+            return 0
+        case query.LogicFormula(left, right, _):
+            l_depth = alternation_depth(left)
+            r_depth = alternation_depth(right)
+            return max(l_depth, r_depth)
+        case query.DiamondFormula(l, f) | query.BoxFormula(l, f):
+            return alternation_depth(f)
+        case query.MuFormula(var, formula):
+            depth = max(1, alternation_depth(formula))
+            subformulas = enumerate_subformulas_of_type(formula, "max")
+            for f in subformulas:
+                depth = max(depth, alternation_depth(f)+1)
+            return depth
+        case query.NuFormula(var, formula):
+            depth = max(1, alternation_depth(formula))
+            subformulas = enumerate_subformulas_of_type(formula, "min")
+            for f in subformulas:
+                depth = max(depth, alternation_depth(f)+1)
+            return depth
+        case query.RecursionVariable(name):
+            return 0
 
-        def dfs(node, depth):
-        #depth first search
-            nonlocal max_depth
-            if node not in parent_to_child:
-                # Reached leaf node
-                max_depth = max(max_depth, depth)
-                return
-            for child in parent_to_child[node]:
-                dfs(child, depth + 1)
+def dependent_alternation_depth(formula: query.Formula) -> int:
+    "Another try at computing dependent alternation depth"
+    match formula:
+        case query.TrueLiteral() | query.FalseLiteral():
+            return 0
+        case query.LogicFormula(left, right, _):
+            l_depth = dependent_alternation_depth(left)
+            r_depth = dependent_alternation_depth(right)
+            return max(l_depth, r_depth)
+        case query.DiamondFormula(l, f) | query.BoxFormula(l, f):
+            return dependent_alternation_depth(f)
+        case query.MuFormula(var, formula):
+            depth = dependent_alternation_depth(formula)
+            subformulas = enumerate_subformulas_of_type(formula, "max")
+            for f in subformulas:
+                if formula_contains_variable(f, var):
+                    depth = max(depth, dependent_alternation_depth(f)+1)
+            return depth
+        case query.NuFormula(var, formula):
+            depth = max(1, dependent_alternation_depth(formula))
+            subformulas = enumerate_subformulas_of_type(formula, "min")
+            for f in subformulas:
+                if formula_contains_variable(f, var):
+                    depth = max(depth, dependent_alternation_depth(f)+1)
+            return depth
+        case query.RecursionVariable(name):
+            return 0
 
-        dfs(self.tree.label, 1)  # Start depth calculation from the root
+def formula_contains_variable(f: query.Formula, var: query.RecursionVariable) -> bool:
+    match f:
+        case query.TrueLiteral() | query.FalseLiteral():
+            return False
+        case query.LogicFormula(left, right, _):
+            return formula_contains_variable(left, var) or \
+                    formula_contains_variable(right,var)
+        case query.DiamondFormula(l, formula) | query.BoxFormula(l, formula):
+            return formula_contains_variable(formula, var)
+        case query.MuFormula(var, formula) | query.NuFormula(var, formula):
+            return formula_contains_variable(formula, var)
+        case query.RecursionVariable(name):
+            return name == var.name
 
-        return max_depth
-
-    def alternate(self):
-        "computes the alternation depth"
-        child_to_parent = create_parent_relation(self.tree) 
-        min_max_dict = create_fixpoint_to_type_relation(self.tree)
-        parent_to_child = self.make_parent_to_child(child_to_parent) 
-        
-        def dfs(node, depth, current_label):
-            if node not in parent_to_child:
-                # Leaf node reached
-                return depth
-
-            max_depth = depth
-            children = parent_to_child[node]
-
-            for child in children:
-                child_label = min_max_dict[child]
-                if child_label != current_label:
-                    # Labels alternate, continue exploration
-                    child_depth = dfs(child, depth + 1, child_label)
-                    max_depth = max(max_depth, child_depth)
-
-            return max_depth
-
-        max_alternate_depth = 0
-        
-        #start compution of depth from every node, not just root node
-        for node in min_max_dict:
-            node_label = min_max_dict[node]
-            alternate_depth = dfs(node, 1, node_label)
-            max_alternate_depth = max(max_alternate_depth, alternate_depth)
-        
-        return max_alternate_depth
-
-    def make_open_variables_dict(self, formula, dict):
-        match formula:
-            case query.TrueLiteral() | query.FalseLiteral():
-                pass
-            case query.LogicFormula(left, right, _):
-                self.make_open_variables_dict(left, dict)
-                self.make_open_variables_dict(right, dict)
-            case query.DiamondFormula(l, f) | query.BoxFormula(l, f):
-                self.make_open_variables_dict(f, dict)
-            case query.MuFormula(var, formula):
-                if var.name not in dict:
-                    relation_creator = ResetRelationCreator(formula)
-                    open_variables = relation_creator.find_open_variables(formula,{var.name})
-                    dict[var.name] = open_variables
-                    self.make_open_variables_dict(formula, dict)
-            case query.NuFormula(var, formula):
-                if var.name not in dict:
-                    relation_creator = ResetRelationCreator(formula)
-                    open_variables = relation_creator.find_open_variables(formula,{var.name})
-                    dict[var.name] = open_variables
-                    self.make_open_variables_dict(formula, dict)
-            case query.RecursionVariable(name):
-                pass
-            case _:
-                raise AssertionError()
-        return dict
-        
-    def d_alternate(self):
-        "computes the dependent alternation depth"
-        open_variables_dict = self.make_open_variables_dict(self.formula, {})
-        print("final result: ",open_variables_dict)
-        child_to_parent = create_parent_relation(self.tree) 
-        min_max_dict = create_fixpoint_to_type_relation(self.tree)
-        parent_to_child = self.make_parent_to_child(child_to_parent) 
-        
-        def dfs(node, depth, current_label):
-            if node not in parent_to_child:
-                # Leaf node reached
-                return depth
-
-            max_depth = depth
-            max_depth_with_dependency = 0
-            children = parent_to_child[node]
-
-            for child in children:
-                child_label = min_max_dict[child]
-                if child_label != current_label:
-                    # Labels alternate, continue exploration
-                    if node in open_variables_dict[child]:
-                       #only update max depth if the dependency condition is met
-                       max_depth_with_dependency = depth+1 
-                    child_depth = dfs(child, depth + 1, child_label)
-                    max_depth = max(max_depth, child_depth)
-                    
-
-            return max_depth_with_dependency
-
-        max_dependent_alternate_depth = 0
-        
-        #start compution of depth from every node, not just root node
-        for node in min_max_dict:
-            node_label = min_max_dict[node]
-            alternate_depth = dfs(node, 1, node_label)
-            max_dependent_alternate_depth = max(max_dependent_alternate_depth, alternate_depth)
-        
-        return max_dependent_alternate_depth
+def enumerate_subformulas_of_type(formula: query.Formula, fp_type: str) -> list[query.Formula]:
+    "Returns a list of all subformulas of type type min/max in the main formula"
+    match formula:
+        case query.TrueLiteral() | query.FalseLiteral():
+            return []
+        case query.LogicFormula(left, right, _):
+            l = enumerate_subformulas_of_type(left, fp_type)
+            r = enumerate_subformulas_of_type(right, fp_type)
+            return [*l,*r]
+        case query.DiamondFormula(l, f) | query.BoxFormula(l, f):
+            return enumerate_subformulas_of_type(f, fp_type)
+        case query.MuFormula(var, formula):
+            l = []
+            if fp_type == "min":
+                l.append(query.MuFormula(var, formula))
+            l.extend(enumerate_subformulas_of_type(formula, fp_type))
+            return l
+        case query.NuFormula(var, formula):
+            l = []
+            if fp_type == "max":
+                l.append(query.NuFormula(var,formula))
+            l.extend(enumerate_subformulas_of_type(formula, fp_type))
+            return l
+        case query.RecursionVariable(name):
+            return []
     
-formula = "mu X. (mu Y. (Y && X) && (mu Z. Z || mu Q. (nu V. Q && mu T. T)))"
+# Test case 1 from slides
+formula = "(mu X. nu Y. (X || Y) && mu A. mu B. (A && mu C. C))"
 parser = query.Parser(formula)
 res = parser.parse()
-tree = create_tree(res)
+print("Nested: ", nested(res))
+print("Alternation: ", alternation_depth(res))
+print("Dependent: ", dependent_alternation_depth(res))
 
-compute_depths = ComputeDepths(res, tree)
-print(compute_depths.nested())
-print(compute_depths.alternate())
-print(compute_depths.d_alternate())
+print()
+# Test case 1 modified from slides
+formula = "(mu X. nu Y. (X || Y) && mu A. mu B. (A && mu C. mu K. C))"
+parser = query.Parser(formula)
+res = parser.parse()
+print("Nested: ", nested(res))
+print("Alternation: ", alternation_depth(res))
+print("Dependent: ", dependent_alternation_depth(res))
+
+print()
+
+# Test case 2 from slides
+formula = "(mu X. nu Y. (X || Y) && mu A. nu B. (A && mu C. C))"
+parser = query.Parser(formula)
+res = parser.parse()
+print("Nested: ", nested(res))
+print("Alternation: ", alternation_depth(res))
+print("Dependent: ", dependent_alternation_depth(res))
