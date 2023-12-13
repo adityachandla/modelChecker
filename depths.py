@@ -30,6 +30,9 @@ def alternation_depth(formula: query.Formula) -> int:
         case query.MuFormula(var, formula):
             depth = max(1, alternation_depth(formula))
             subformulas = enumerate_subformulas_of_type(formula, "max")
+            # It is not strictly necessary to check all as the first one
+            # will have the greatest height but we would have to write
+            # another function to find the largest nu.
             for f in subformulas:
                 depth = max(depth, alternation_depth(f)+1)
             return depth
@@ -44,6 +47,7 @@ def alternation_depth(formula: query.Formula) -> int:
 
 def dependent_alternation_depth(formula: query.Formula) -> int:
     "Another try at computing dependent alternation depth"
+    "Based on formula on slide 19"
     match formula:
         case query.TrueLiteral() | query.FalseLiteral():
             return 0
@@ -71,6 +75,7 @@ def dependent_alternation_depth(formula: query.Formula) -> int:
             return 0
 
 def formula_contains_variable(f: query.Formula, var: query.RecursionVariable) -> bool:
+    "Checks if a formula contains a particular variable"
     match f:
         case query.TrueLiteral() | query.FalseLiteral():
             return False
